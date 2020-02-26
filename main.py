@@ -65,11 +65,17 @@ class MainHandler(tornado.web.RequestHandler):
 	def initialize(self, credentials_list):
 		self.credentials_list = credentials_list
 
-	def get(self):
-		email, pwd = random.choice(self.credentials_list)
+	def get(self, email = None):
+		if email is None:
+			email, pwd = random.choice(self.credentials_list)
+			self.write(email)
+			return
+		for address, pwd in self.credentials_list:
+			if address == email:
+				break
 		token = self.get_aac_token(email, pwd)
 		token = self.get_auth_token(email, token)
-		self.write("%s %s" % (email, token))
+		self.write("%s" % (token))
 
 def make_app(credential_file):
 	with open(credential_file) as inbuff:
@@ -77,7 +83,8 @@ def make_app(credential_file):
 	print("Loaded credentials: ", [line[0] for line in credentials_list])
 	params = dict(credentials_list=credentials_list)
 	return tornado.web.Application([
-		(r"/.*", MainHandler, params),
+		(r"/email", MainHandler, params),
+		(r"/token/email/(.*)", MainHandler, params),
 	])
 
 if __name__ == "__main__":
